@@ -1,0 +1,12 @@
+@use "./variables.scss" as variables;
+
+:export {
+  menuText: variables.$menuText;
+  menuActiveText: variables.$menuActiveText;
+  subMenuActiveText: variables.$subMenuActiveText;
+  menuBg: variables.$menuBg;
+  menuHover: variables.$menuHover;
+  subMenuBg: variables.$subMenuBg;
+  subMenuHover: variables.$subMenuHover;
+  sideBarWidth: variables.$sideBarWidth;
+}

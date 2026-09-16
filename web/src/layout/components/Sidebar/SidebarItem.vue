@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!item.hidden">
+  <div v-if="!item.meta?.hidden" class="sidebar-item-wrapper">
     <template
       v-if="
         hasOneShowingChild(item.children, item) &&
@@ -47,14 +47,13 @@
 import { isExternal } from "@/utils/validate";
 import Item from "./Item.vue";
 import AppLink from "./Link.vue";
-import FixiOSBug from "./FixiOSBug"
 import { ref } from 'vue';
 import { ExtendedRouteRecordRaw } from '@/stores/types';
 
 const { item, isNest = false, basePath = "" } = defineProps<{
   item: ExtendedRouteRecordRaw;
   isNest?: boolean;
-  basePath: string;
+  basePath?: string;
 }>()
 const onlyOneChild = ref<ExtendedRouteRecordRaw>({} as ExtendedRouteRecordRaw);
 const hasOneShowingChild = (children: ExtendedRouteRecordRaw[] = [], parent: ExtendedRouteRecordRaw) => {
@@ -89,6 +88,13 @@ const resolvePath = (routePath: string)=> {
   return `/${joined}`.replace(/\/+/g, "/").replace(/\/$/, "") || "/";
 }
 
-FixiOSBug();
 </script>
-<style scoped></style>
+<style lang="scss" scoped>
+.sidebar-item-wrapper {
+  width: 100%;
+
+  ::deep(.ant-menu-title-content) {
+    font-size: 14px;
+  }
+}
+</style>

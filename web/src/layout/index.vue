@@ -9,9 +9,9 @@
     <div :class="{ hasTagsView: needTagsView }" class="main-container">
       <div :class="{ 'fixed-header': fixedHeader }">
         <navbar />
-        <!-- <tags-view v-if="needTagsView" /> -->
+        <tags-view v-if="needTagsView" />
       </div>
-      <!-- <app-main /> -->
+      <app-main />
       <!-- <right-panel v-if="showSettings">
           <settings />
         </right-panel> -->
@@ -20,7 +20,7 @@
 </template>
 <script lang="ts" setup name="LayoutIndex">
 // import RightPanel from "@components/RightPanel";
-import { Navbar, Sidebar } from "./components";
+import { Navbar, Sidebar, AppMain, TagsView } from "./components";
 import { computed } from "vue";
 import { storeToRefs } from "pinia";
 import useResizeHandler from "./mixin/ResizeHandler";

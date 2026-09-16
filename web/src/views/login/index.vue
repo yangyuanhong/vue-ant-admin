@@ -43,14 +43,14 @@
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { useAuthStore } from '../stores/auth'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const auth = useAuthStore()
 const loading = ref(false)
 const containerRef = ref<HTMLDivElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
-const form = reactive({ username: 'yyh_y', password: '123456', rememberMe: true })
+const form = reactive({ username: 'yyh_yy', password: '123456', rememberMe: true })
 
 const usernamePattern = /^[A-Za-z0-9_]+$/
 const passwordPattern = /^[A-Za-z0-9_!@#$%^&*]+$/

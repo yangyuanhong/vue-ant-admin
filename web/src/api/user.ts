@@ -1,9 +1,8 @@
 import api from "@/utils/axios";
 
-export function getInfo(token:string) { 
+export function getInfo(_token: string) {
   return api({
-    url: "/user/info",
+    url: "/auth/info",
     method: "get",
-    params: { token }
   })
 }

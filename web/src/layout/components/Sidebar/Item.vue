@@ -1,11 +1,14 @@
 <script lang="ts">
 import { defineComponent, h } from "vue";
-import { HomeOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons-vue";
+import { HeartFilled, HomeOutlined, SettingOutlined, UserOutlined } from "@ant-design/icons-vue";
+import SvgIcon from "@/components/SvgIcon/index.vue";
 
 const iconMap = {
   home: HomeOutlined,
   setting: SettingOutlined,
   user: UserOutlined,
+  heart: HeartFilled,
+  rose: HeartFilled,
 };
 
 export default defineComponent({
@@ -27,8 +30,13 @@ export default defineComponent({
       const Icon = iconMap[props.icon as keyof typeof iconMap];
       if (Icon) {
         children.push(h(Icon, { class: "menu-item-icon" }));
-      } else {
-        
+      } else if (props.icon) {
+        children.push(
+          h(SvgIcon, {
+            iconClass: props.icon,
+            className: "menu-item-icon",
+          }),
+        );
       }
 
       if (props.title) {
@@ -43,7 +51,8 @@ export default defineComponent({
 
 <style scoped>
 .menu-item-icon {
-  margin-right: 10px;
+  margin-right: 14px;
   font-size: 16px;
+  color: #bfcbd9;
 }
 </style>

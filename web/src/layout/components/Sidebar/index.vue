@@ -15,7 +15,7 @@
 </template>
 <script lang="ts" setup name="SidebarIndex">
 import { computed, ref } from "vue";
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElScrollbar } from "element-plus";
 import "element-plus/es/components/scrollbar/style/css";
 import variablesStyle from "@/styles/variables.module.scss";
@@ -29,6 +29,7 @@ import SidebarItem from './SidebarItem.vue'
 const { sidebar } = storeToRefs(useAppStore());
 const { sidebarLogo } = storeToRefs(useSettingsStore());
 const permissionStore = usePermissionStore();
+const route = useRoute();
 const permission_routes = computed(() => permissionStore.routes);
 
 const openKeys = ref<string[]>([])
@@ -36,12 +37,13 @@ const openKeys = ref<string[]>([])
 const showLogo = computed(() => sidebarLogo.value);
 const isCollapse = computed(() => !sidebar.value.opened);
 const activeMenu = computed(() => {
-  const { meta, path } = useRoute();
+  const { meta, path } = route;
   const activeMenu = meta.activeMenu;
   if (activeMenu) {
     return activeMenu
   }
   return path
 });
+
 </script>
 <style scoped></style>

@@ -1,6 +1,6 @@
 <template>
-  <div class="index">
-    
+  <div class="screenfull">
+    <svg-icon :icon-class="isFullscreen?'exit-fullscreen':'fullscreen'" @click="clickHandle" />
   </div>
 </template>
 <script lang="ts" setup name="ScreenFull">
@@ -18,7 +18,7 @@ const change = () => {
   isFullscreen.value = screenfull.isFullscreen;
 };
 
-const click = () => {
+const clickHandle = () => {
   if (!screenfull.isEnabled) {
       message.warning('you browser can not work');
     return false
@@ -35,5 +35,4 @@ const destroy = () => {
 onMounted(() => init());
 onBeforeUnmount(destroy)
 </script>
-<style scoped>
-</style>
+

@@ -44,15 +44,15 @@ export type BooleanSettingKey =
 
 export type BooleanSetting = Pick<DefaultSettings, BooleanSettingKey>;
 
-
-
 // 扩展路由记录类型
-export declare type ExtendedRouteRecordRaw = RouteRecordRaw & {
+export type ExtendedRouteRecordRaw = Omit<RouteRecordRaw, "children"> & {
+  children?: ExtendedRouteRecordRaw[];
   // 菜单高亮的key
   activeMenu?: string; // 是否在菜单中隐藏
   hidden?: boolean; // 路由元信息
   alwaysShow?: boolean;
   noShowingChildren?: boolean;
+  redirect?: string;
   meta?: RouteMeta & {
     // 标题
     title?: string; // 图标
@@ -64,3 +64,22 @@ export declare type ExtendedRouteRecordRaw = RouteRecordRaw & {
     params?: Record<string, any>;
   };
 };
+
+export type ViewTags = ExtendedRouteRecordRaw &{
+  path: string;
+  name: string;
+  fullPath: string;
+  query?: any;
+  title?: string;
+  meta: RouteMeta & {
+    noCache: string;
+    title?: string; // 图标
+    hidden?: boolean; // 路由元信息
+  };
+  children?: ViewTags[];
+}
+
+export interface ViewTagsResult {
+  visitedViews: ViewTags[];
+  cachedViews: string[];
+}

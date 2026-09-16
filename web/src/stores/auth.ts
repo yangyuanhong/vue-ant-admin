@@ -2,16 +2,19 @@ import { defineStore } from "pinia";
 import api from "../utils/axios";
 import { getInfo } from "@/api/user";
 import router, { resetRouter } from "@/router";
+import type { RouteRecordRaw } from "vue-router";
 import { usePermissionStore } from "@/stores/permission";
 import { ExtendedRouteRecordRaw } from "./types";
+import { removeToken } from "@/utils/auth";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     token: localStorage.getItem("quiz_token") || "",
     user: null as null | { id: string; username: string; role: string },
-    roles: [],
+    roles: [] as string[],
     name: "",
-    avatar: "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
+    avatar:
+      "https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif",
     introduction: "",
   }),
   actions: {
@@ -33,13 +36,15 @@ export const useAuthStore = defineStore("auth", {
             const { data } = response;
 
             if (!data) {
-              reject("Verification failed, please Login again.");
+              reject(new Error("Verification failed, please Login again."));
+              return;
             }
 
             const { roles, name, avatar, introduction } = data;
 
             if (!roles || roles.length <= 0) {
-              reject("getInfo: roles must be a non-null array!");
+              reject(new Error("getInfo: roles must be a non-null array!"));
+              return;
             }
 
             this.roles = roles;
@@ -62,14 +67,23 @@ export const useAuthStore = defineStore("auth", {
 
       const { roles } = await this.getInfo();
 
+      console.log(roles, "roles");
       resetRouter();
 
-      const accessRoutes = await usePermissionStore().generateRoutes(roles);
+      const permissionStore = usePermissionStore();
+      const accessRoutes = permissionStore.generateRoutes(roles);
       accessRoutes.forEach((route: ExtendedRouteRecordRaw) => {
-        router.addRoute(route);
+        router.addRoute(route as RouteRecordRaw);
       });
+      permissionStore.setRoutes(accessRoutes);
 
       // 移除所有的delAllViews
+    },
+
+    resetToken() {
+      this.token = "";
+      this.roles = [];
+      removeToken();
     },
   },
 });

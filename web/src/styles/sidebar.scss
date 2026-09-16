@@ -29,6 +29,10 @@
 
     .scrollbar-wrapper {
       overflow-x: hidden !important;
+
+      .el-scrollbar__view {
+        width: 100%;
+      }
     }
 
     .a-scrollbar__bar.is-vertical {
@@ -64,10 +68,45 @@
       margin-left: -2px;
     }
 
-    .a-menu {
+    .ant-menu {
       border: none;
+      border-inline-end: 0 !important;
+      box-sizing: border-box;
       height: 100%;
       width: 100% !important;
+      background: #304156;
+      color: #bfcbd9;
+      font-size: 16px;
+
+      .ant-menu-item,
+      .ant-menu-submenu-title {
+        width: 100% !important;
+        height: 56px;
+        line-height: 56px;
+        margin: 0 !important;
+        margin-inline: 0 !important;
+        border-radius: 0 !important;
+        color: #bfcbd9;
+        background: #304156 !important;
+      }
+
+      .ant-menu-item-selected {
+        color: rgb(64, 158, 255) !important;
+      }
+
+      .ant-menu-item:hover,
+      .ant-menu-submenu-title:hover {
+        color: rgb(64, 158, 255) !important;
+        background: #263445 !important;
+      }
+
+      .ant-menu-sub {
+        background: #1f2d3d !important;
+      }
+
+      .ant-menu-sub .ant-menu-item {
+        background: #1f2d3d !important;
+      }
     }
 
     // menu hover

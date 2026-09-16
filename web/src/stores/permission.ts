@@ -50,18 +50,15 @@ export const usePermissionStore = defineStore("permission", {
     };
   },
   actions: {
-    generateRoutes(roles: string[]):Promise<ExtendedRouteRecordRaw[]> {
-      return new Promise((resolve) => {
-        let accessedRoutes: ExtendedRouteRecordRaw[];
-        if (roles.includes("admin")) {
-          accessedRoutes = asyncRoutes || [];
-        } else {
-          accessedRoutes = filterAsyncRoutes(asyncRoutes, roles);
-        }
-        this.addRoutes = accessedRoutes;
-        this.routes = constantRoutes.concat(accessedRoutes);
-        resolve(accessedRoutes);
-      });
+    generateRoutes(roles: string[]): ExtendedRouteRecordRaw[] {
+      const accessedRoutes = roles.includes("admin")
+        ? asyncRoutes
+        : filterAsyncRoutes(asyncRoutes, roles);
+      this.addRoutes = accessedRoutes;
+      return accessedRoutes;
+    },
+    setRoutes(accessedRoutes: ExtendedRouteRecordRaw[]) {
+      this.routes = constantRoutes.concat(accessedRoutes);
     },
   },
 });

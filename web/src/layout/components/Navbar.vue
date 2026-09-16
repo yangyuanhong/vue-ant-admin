@@ -7,12 +7,16 @@
       @toggleClick="toggleSideBar"
     />
     <breadcrumb id="breadcrumb-container" class="breadcrumb-container" />
-    <template v-if="device !== 'mobile'">
-      <error-log class="errLog-container right-menu-item hover-effect" />
-    </template>
+
     <div class="right-menu">
-      <error-log class="errLog-container right-menu-item hover-effect" />
-      <screen-full id="screenfull" class="right-menu-item hover-effect" />
+      <template v-if="device !== 'mobile'">
+        <error-log class="errLog-container right-menu-item hover-effect" />
+        <screen-full id="screenfull" class="right-menu-item hover-effect" />
+        <a-tooltip title="全局大小"  placement="top" id="size-select" class="right-menu-item hover-effect">
+          <size-select />
+        </a-tooltip>
+      </template>
+
       <a-dropdown
         class="avatar-container right-menu-item hover-effect"
         trigger="click"
@@ -29,11 +33,11 @@
         <template #overlay>
           <a-menu>
             <a-menu-item>
-              <router-link to="/"> Dashboard </router-link>
+              <router-link to="/"> 首页 </router-link>
             </a-menu-item>
             <a-menu-divider />
             <a-menu-item divided @click.native="logout">
-              <span style="display: block">Log Out</span>
+              <span style="display: block">退出登录</span>
             </a-menu-item>
           </a-menu>
         </template>
@@ -46,7 +50,8 @@ import { computed } from "vue";
 import Breadcrumb from "@/components/Breadcrumb/index.vue";
 import Hamburger from "@/components/Hamburger/index.vue";
 import ErrorLog from "@/components/ErrorLog/index.vue";
-import ScreenFull from "@/components/ScreenFull/index.vue"
+import ScreenFull from "@/components/ScreenFull/index.vue";
+import SizeSelect from "@/components/SizeSelect/index.vue";
 import { CaretDownOutlined } from "@ant-design/icons-vue";
 import { useAppStore } from "@/stores/app";
 import { useAuthStore } from "@/stores/auth";
@@ -90,6 +95,9 @@ const logout = () => {
 
   .breadcrumb-container {
     float: left;
+    height: 100%;
+    display: flex;
+    align-items: center;
   }
 
   .errLog-container {
@@ -101,6 +109,9 @@ const logout = () => {
     float: right;
     height: 100%;
     line-height: 50px;
+    display: flex;
+    justify-items: flex-end;
+    align-items: center;
 
     &:focus {
       outline: none;
@@ -122,6 +133,21 @@ const logout = () => {
           background: rgba(0, 0, 0, 0.025);
         }
       }
+
+      &.screenfull {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      :deep(svg) {
+        display: inline-block;
+        cursor: pointer;
+        fill: #5a5e66;
+        width: 20px;
+        height: 20px;
+        vertical-align: 10px;
+      }
     }
 
     .avatar-container {
@@ -140,7 +166,7 @@ const logout = () => {
         .a-icon-caret-bottom {
           cursor: pointer;
           position: absolute;
-          right: -15px;
+          right: -20px;
           top: 30px;
           font-size: 12px;
         }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
-import { theme } from 'ant-design-vue'
 import { useSettingsStore } from '@/stores/settings'
+import zhCN from 'ant-design-vue/es/locale/zh_CN'
 
 const settingsStore = useSettingsStore()
 
@@ -23,7 +23,7 @@ const themeConfig = computed(() => ({
 </script>
 
 <template>
-  <a-config-provider :theme="themeConfig">
+  <a-config-provider :theme="themeConfig" :locale="zhCN">
     <router-view />
   </a-config-provider>
 </template>

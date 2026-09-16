@@ -9,7 +9,7 @@
         <SvgIcon icon-class="bug" />
       </a-button>
     </a-badge>
-    <a-dialog :visible.sync="dialogTableVisible" width="80%">
+    <a-modal v-model:open="dialogTableVisible" width="80%">
       <div slot="title">
         <span style="padding-right: 10px">Error Log</span>
         <a-button
@@ -30,27 +30,31 @@
                 {{ record.err.message }}
               </a-tag>
             </div>
-            <br>
+            <br />
             <div>
-              <span class="message-title" style="padding-right: 10px;">Info: </span>
+              <span class="message-title" style="padding-right: 10px"
+                >Info:
+              </span>
               <a-tag type="warning">
                 {{ record.vm.$vnode.tag }} error in {{ record.info }}
               </a-tag>
             </div>
-            <br>
+            <br />
             <div>
-              <span class="message-title" style="padding-right: 16px;">Url: </span>
+              <span class="message-title" style="padding-right: 16px"
+                >Url:
+              </span>
               <a-tag type="success">
                 {{ record.url }}
               </a-tag>
             </div>
           </template>
           <template v-else-if="column.key === 'stack'">
-             {{ record.err.stack }}
+            {{ record.err.stack }}
           </template>
         </template>
       </a-table>
-    </a-dialog>
+    </a-modal>
   </div>
 </template>
 <script lang="ts" setup name="ErrorLog">

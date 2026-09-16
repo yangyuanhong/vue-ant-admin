@@ -1,17 +1,16 @@
-import { createRouter, createWebHistory } from "vue-router";
-import { ExtendedRouteRecordRaw } from "@/stores/types";
+import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import { constantRoutes } from './routes'
 
 
 const router = createRouter({
   history: createWebHistory(),
-  routes: constantRoutes
+  routes: constantRoutes as RouteRecordRaw[]
 });
 
 // 记录动态路由名称
 const asyncRouteNames:Set<string> = new Set();
 
-export function addAsyncRoute(route:ExtendedRouteRecordRaw) { 
+export function addAsyncRoute(route:RouteRecordRaw) { 
   if (route.name) { 
     asyncRouteNames.add(route.name as string)
   }

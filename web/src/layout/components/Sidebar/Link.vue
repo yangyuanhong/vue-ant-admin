@@ -1,7 +1,10 @@
 <template>
-  <component :is="type" v-bind="linkProps(to)">
+  <a v-if="external" :href="to" target="_blank" rel="noopener noreferrer">
     <slot />
-  </component>
+  </a>
+  <router-link v-else :to="to">
+    <slot />
+  </router-link>
 </template>
 <script lang="ts" setup name="Link">
 import { computed } from "vue";
@@ -9,23 +12,4 @@ import { isExternal } from "@/utils/validate";
 
 const { to } = defineProps<{ to: string }>();
 const external = computed(() => isExternal(to));
-const type = computed(() => {
-  if (external.value) {
-    return "a";
-  }
-  return "router-link";
-});
-
-const linkProps = (to: string) => {
-  if (external) {
-    return {
-      href: to,
-      target: "_blank",
-      rel: "noopener",
-    };
-  }
-  return {
-    to: to,
-  };
-};
 </script>

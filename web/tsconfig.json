@@ -11,10 +11,10 @@
     "noEmit": true,
     "jsx": "preserve",
     "strict": true,
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

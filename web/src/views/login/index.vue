@@ -8,7 +8,7 @@
       </header>
 
       <div class="login-main">
-        <a-form layout="vertical" @finish="onSubmit">
+        <a-form layout="vertical" >
           <a-form-item label="用户名" class="form-item">
             <a-input
               v-model:value="form.username"
@@ -70,13 +70,12 @@ const onSubmit = async () => {
     return
   }
   loading.value = true
-  console.log(form);
   try {
     await auth.login(form.username, form.password)
     message.success('登录成功')
-    router.push('/')
+    await router.push('/')
   } catch (error: any) {
-    message.error(error?.response?.data?.message || '登录失败')
+    message.error(error?.response?.data?.message || error?.message || '登录失败')
   } finally {
     loading.value = false
   }

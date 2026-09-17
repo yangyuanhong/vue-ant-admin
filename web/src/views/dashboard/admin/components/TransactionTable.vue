@@ -4,6 +4,7 @@
       border
       :data-source="list"
       :columns="columns"
+      v-bind="tableConfig"
       style="width: 100%; padding-top: 15px"
     >
       <template #bodyCell="{ column, record }">
@@ -14,8 +15,8 @@
              ¥{{ toThousandFilter(record.price) }}
         </template>
         <template v-else-if="column.key === 'status'">
-            <a-tag :type="statusFilter(record.status)">
-              {{  record.status }}
+            <a-tag :color="statusFilter(record.status)">
+              {{  statusText(record.status) }}
             </a-tag>
         </template>
       </template>
@@ -29,18 +30,26 @@ import { TransactionList } from "../types";
 import { toThousandFilter } from "@/utils";
 
 let list = ref<TransactionList[] | null>(null);
-const statusFilter = (status: keyof { success: string; padding: string }) => {
-  const statusMap = { success: "success", padding: "danger" };
+const statusFilter = (status: keyof { "1": string; "0": string }) => {
+  const statusMap = { "1": "success", "0": "error" };
   return statusMap[status];
 };
+const statusText = (status: keyof { "0": string, "1": string })=>{
+  const statusMap = { "1": "成功", "0": "失败" };
+  return statusMap[status];
+}
 const orderNoFilter = (str: string) => str.substring(0, 30);
 
 const fetchData = async () => {
   const response = await transactionList();
-  if (response.data) {
+  console.log(response);
+  if (response.data&&response.data.items) {
     list.value = response.data.items.splice(0, 8);
   }
 };
+let tableConfig = {
+  pagination:false
+}
 
 const columns = computed(() => {
   return [

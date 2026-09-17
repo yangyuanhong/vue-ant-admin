@@ -19,7 +19,8 @@ export const useAuthStore = defineStore("auth", {
   }),
   actions: {
     async login(username: string, password: string) {
-      const { data } = await api.post("/auth/login", { username, password });
+      const response = await api.post("/auth/login", { username, password });
+      const data = response.data ?? response;
       this.token = data.token;
       this.user = data.user;
       localStorage.setItem("quiz_token", data.token);
@@ -33,7 +34,7 @@ export const useAuthStore = defineStore("auth", {
       return new Promise((resolve, reject) => {
         getInfo(this.token)
           .then((response) => {
-            const { data } = response;
+            const data = response.data ?? response;
 
             if (!data) {
               reject(new Error("Verification failed, please Login again."));

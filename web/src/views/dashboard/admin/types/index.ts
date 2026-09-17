@@ -39,3 +39,8 @@ export interface FilterTodo {
   active: Function
   completed: Function
 }
+
+export interface Status {
+  success: string;
+  pending: string;
+}

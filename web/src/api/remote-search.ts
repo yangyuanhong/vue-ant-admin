@@ -3,7 +3,7 @@ import { Response } from "@/views/dashboard/admin/types";
 
 export function transactionList():Promise<Response> {
   return api({
-    url: '/transaction/list',
+    url: '/tran/transaction',
     method: 'get',
   })
 }

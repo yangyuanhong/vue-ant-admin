@@ -30,7 +30,7 @@
         <todo-list />
       </a-col>
       <a-col :xs="{span: 24}" :sm="{span: 12}" :md="{span: 12}" :lg="{span: 6}" :xl="{span: 6}" style="margin-bottom:30px;">
-        <!-- <box-card /> -->
+        <box-card />
       </a-col>
     </a-row>
   </div>
@@ -45,7 +45,8 @@ import { LineChartDataSum } from "./types";
 import PieChart from "./components/PieChart.vue"
 import BarChart from "./components/BarChart.vue";
 import TransactionTable from './components/TransactionTable.vue'
-import TodoList from "./components/TodoList/index.vue"
+import TodoList from "./components/TodoList/index.vue";
+import BoxCard from "./components/BoxCard.vue";
 
 const lineChartDataSum: LineChartDataSum = {
   newVisitis: {

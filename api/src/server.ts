@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import path from "path"
 import { fileURLToPath } from "url"
 import authRouter from './routes/auth.js'
+import transactionRouter from "./routes/transaction.js"
 import { connectDb } from './config/db.js'
 
 dotenv.config({ path: new URL('../.env', import.meta.url) })
@@ -33,6 +34,7 @@ app.get('/health', (_req, res) => {
 
 
 app.use('/api/auth', authRouter)
+app.use('/api/tran', transactionRouter)
 
 await connectDb(process.env.MONGODB_URI)
 

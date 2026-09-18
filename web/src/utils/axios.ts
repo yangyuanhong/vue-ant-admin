@@ -13,7 +13,6 @@ api.interceptors.request.use((config) => {
   return config
 },
   error => {
-    console.log(error);
     return Promise.reject(error)
   });
 
@@ -40,7 +39,6 @@ api.interceptors.response.use(
     
   },
   error => {
-    console.log('err' + error) // for debug
     message.error(error.message, 5)
     return Promise.reject(error)
   }

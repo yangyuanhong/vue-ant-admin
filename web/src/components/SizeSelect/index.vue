@@ -1,5 +1,5 @@
 <template>
-  <a-dropdown trigger="click">
+  <a-dropdown trigger="click" :overlayStyle="{ zIndex: 9999}">
     <div>
       <svg-icon class-name="size-icon" icon-class="size" />
     </div>
@@ -20,10 +20,9 @@ import { message } from "ant-design-vue";
 import { useTagsViewStore } from '../../stores/tagsView';
 
 const sizeOptions = reactive<{ value: string; label: string }[]>([
-  { label: "Default", value: "default" },
-  { label: "Medium", value: "medium" },
+  { label: "Large", value: "large" },
+  { label: "Default", value: "middle" },
   { label: "Small", value: "small" },
-  { label: "Mini", value: "mini" },
 ]);
 const useApp = useAppStore();
 const route = useRoute();
@@ -49,11 +48,9 @@ const handleSetSize = ({
 }: {
   key: "medium" | "default" | "small" | "mini";
   }): void => {
-console.log(key, "size");
   useApp.setSize(key);
   refreshView();
   message.success("Switch Size Success");
-  console.log(useApp.size, "--->");
 };
 </script>
 <style scoped>

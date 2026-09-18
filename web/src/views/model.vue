@@ -18,7 +18,6 @@ export default {
   },
   methods: {
     onInput(event) {
-      console.log("->>>");
       this.$emit("change", event.target.value, "子组件传递")
     }
   }

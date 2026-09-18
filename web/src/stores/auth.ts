@@ -68,7 +68,6 @@ export const useAuthStore = defineStore("auth", {
 
       const { roles } = await this.getInfo();
 
-      console.log(roles, "roles");
       resetRouter();
 
       const permissionStore = usePermissionStore();

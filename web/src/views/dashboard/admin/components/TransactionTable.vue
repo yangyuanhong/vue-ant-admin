@@ -42,7 +42,6 @@ const orderNoFilter = (str: string) => str.substring(0, 30);
 
 const fetchData = async () => {
   const response = await transactionList();
-  console.log(response);
   if (response.data&&response.data.items) {
     list.value = response.data.items.splice(0, 8);
   }

@@ -24,7 +24,6 @@ router.get("/transaction", authRequired, async (req, res) => {
 
 router.post("/transaction", authRequired, async (req, res) => {
   let body = !isEmptyObject(req.body) ? req.body : req.query;
-  console.log(body);
   try {
     let data = await Transaction.create({
       ...body,

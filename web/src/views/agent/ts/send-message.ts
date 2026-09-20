@@ -5,7 +5,7 @@ import type {
   User,
 } from "@advanced-chat/components";
 import { message } from "ant-design-vue";
-import type { Ref } from "vue";
+import { Reactive, type Ref } from "vue";
 import { sendChatMessage } from "@/utils/socket";
 
 export interface SendPayload {
@@ -32,12 +32,22 @@ export function sendMessage(
   const clientMessageId = crypto.randomUUID();
 
   activeChat.value.typingUsers = [{ id: assistantUser.id }];
+
+  const pendingAgentMessageId = `pending-agent-${clientMessageId}`;
   messagesText.value.push({
     id: clientMessageId,
     sender: currentUser,
     content,
     createdAt: new Date().toISOString(),
     status: "sent",
+  });
+
+  messagesText.value.push({
+    id: pendingAgentMessageId,
+    sender: assistantUser,
+    content: "💭 正在思考…",
+    createdAt: new Date().toISOString(),
+    status: "sending",
   });
 
   try {
@@ -48,18 +58,32 @@ export function sendMessage(
         clientMessageId,
       },
       (result) => {
-        if (!result.success) {
-          const failedMessage = messagesText.value.find(
-            (item) => item.id === clientMessageId,
+        if (!result.success || !result.messageId) {
+          const pendingMessage = messagesText.value.find(
+            (item) => item.id === pendingAgentMessageId,
           );
-          if (failedMessage) failedMessage.status = "failed";
+          if (pendingMessage) {
+            pendingMessage.status = "failed";
+            pendingMessage.content = "回复失败";
+          }
           activeChat.value.typingUsers = [];
+
+          return;
         }
+
+        const pendingMessage = messagesText.value.find(
+          (item) => item.id === pendingAgentMessageId,
+        );
+
+        if (pendingMessage) {
+          pendingMessage.id = result.messageId;
+        }
+
       },
     );
   } catch {
     const pendingIndex = messagesText.value.findIndex(
-      (item) => item.id === clientMessageId,
+      (item) => item.id === pendingAgentMessageId,
     );
     if (pendingIndex >= 0) messagesText.value[pendingIndex].status = "failed";
     activeChat.value.typingUsers = [];

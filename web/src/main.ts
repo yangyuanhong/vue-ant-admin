@@ -2,7 +2,6 @@ import { createApp } from "vue";
 import { createPinia } from "pinia";
 import 'normalize.css/normalize.css' // a modern alternative to CSS resets
 
-import Antd from "ant-design-vue";
 import "ant-design-vue/dist/reset.css";
 import '@/styles/index.scss' 
 import "./styles.css";
@@ -19,7 +18,7 @@ import { registerDirectives } from "./directive";
 import { setupErrorHandler } from './stores/errorLog'
 
 const pinia = createPinia();
-const app = createApp(App).use(pinia).use(router).use(Antd).use(
+const app = createApp(App).use(pinia).use(router).use(
   AdvancedChatPlugin({
     strings: {
       "chats.empty": "暂无聊天室",

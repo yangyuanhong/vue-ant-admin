@@ -16,7 +16,7 @@
 <script lang="ts" setup name="SidebarIndex">
 import { computed, ref } from "vue";
 import { useRoute } from 'vue-router'
-import { ElScrollbar } from "element-plus";
+import { ElScrollbar } from "element-plus/es/components/scrollbar/index.mjs";
 import "element-plus/es/components/scrollbar/style/css";
 import variablesStyle from "@/styles/variables.module.scss";
 import Logo from "./Logo.vue";

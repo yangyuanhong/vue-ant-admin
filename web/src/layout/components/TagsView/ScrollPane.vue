@@ -4,7 +4,7 @@
   </el-scrollbar>
 </template>
 <script lang="ts" setup name="ScrollPane">
-import { ElScrollbar } from "element-plus";
+import { ElScrollbar } from "element-plus/es/components/scrollbar/index.mjs";
 import "element-plus/es/components/scrollbar/style/css";
 import { computed, onMounted, onUnmounted, ref, useTemplateRef } from "vue";
 

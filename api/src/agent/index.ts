@@ -6,9 +6,10 @@ import {
 import { getModel } from "./model.js";
 import { getAgent } from "./agent.js";
 import type { BaseMessage } from "@langchain/core/messages";
+import { AgentStreamEvent } from "./types/index.js";
 
-export async function invokeAgent(messages: BaseMessage[]) {
-  const agent = getAgent()
+export async function invokeAgent(messages: BaseMessage[], userId:string) {
+  const agent = getAgent(userId)
 
   const result = await agent.invoke({
     messages,
@@ -45,8 +46,9 @@ export async function askAgent(userInput: string): Promise<string> {
 // 新链路：Socket → createAgent → Tool → ChatOpenAI
 export async function* streamToolAgent(
   messages: Array<HumanMessage | AIMessage | SystemMessage>,
-) {
-  const agent = getAgent()
+  userId: string
+):AsyncGenerator<AgentStreamEvent> {
+  const agent = getAgent(userId)
 
   const stream = await agent.stream({
     messages,
@@ -54,26 +56,45 @@ export async function* streamToolAgent(
     streamMode: "messages"
   })
 
+  const startedTools = new Set<string>()
+
   for await (const item of stream) {
     const message = Array.isArray(item) ? item[0] : item;
+    const content = message.content;
+    // 识别模型发出的Tool调用
+    const toolCalls = "tool_calls" in message ? message.tool_calls : [];
 
-    // 工具消息包含工具的原始返回值，只向用户输出模型生成的 AI 消息。
-    const messageType =
-      typeof message.type === "string"
-        ? message.type
-        : typeof message._getType === "function"
-          ? message._getType()
-          : "";
+    if (Array.isArray(toolCalls)) {
+      for (const call of toolCalls) {
+        const toolName = call.name;
 
-    if (messageType !== "ai" && messageType !== "AIMessageChunk") {
-      continue;
+        if (toolName && !startedTools.has(toolName)) {
+          startedTools.add(toolName)
+
+          yield {
+            type: "tool-start",
+            toolName
+          }
+        }
+      }
     }
 
-    const content = message.content;
+    // 识别Tool返回结果
+    if (message.getType?.() === "tool") {
+      const toolName = "name" in message && typeof message.name === "string" ? message.name : "unknown_tool";
+
+      yield {
+        type: "tool-end",
+        toolName,
+        result: typeof content === "string" ? content : JSON.stringify(content),
+      }
+
+      continue
+    }
 
     if (typeof content === "string" && content) {
       yield {
-        type: "text" as const,
+        type: "text",
         content,
       }
       continue

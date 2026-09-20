@@ -12,6 +12,8 @@
 - 分角色权限控制与动态路由
 - 侧边栏 / 顶部导航 / 面包屑 / 标签页布局
 - 仪表盘页面与图表展示
+- 基于 LangChain 的智能体问答与工具调用
+- Socket.IO 流式聊天、会话管理和消息持久化
 - 错误页、404/401 页面和全局错误处理
 - SVG 图标、页面标题、复制和全屏交互
 - 多种 Vue 学习示例页面（路由、v-model、图标、心形特效等）
@@ -33,6 +35,8 @@
 - `js-cookie`、`nprogress`、`screenfull`：登录态缓存、顶部进度条和全屏能力
 - `vite-plugin-svg-icons`：SVG 图标管理
 - `normalize.css`：基础样式重置
+- `@advanced-chat/components`：聊天界面组件
+- `socket.io-client`：实时聊天连接
 
 ### 后端（`api`）
 
@@ -43,6 +47,8 @@
 - bcryptjs：密码哈希
 - dotenv：环境变量管理
 - cors：跨域支持
+- Socket.IO：实时通信
+- LangChain + OpenAI 兼容接口：智能体编排、流式输出和工具调用
 - tsx：TypeScript 开发和脚本执行
 
 ## 项目结构
@@ -60,8 +66,8 @@ apps/
 │  │  ├─ router/                # 路由配置与权限控制入口
 │  │  ├─ stores/                # Pinia 状态（auth / permission / tagsView）
 │  │  ├─ styles/                # 全局样式与 SCSS 变量
-│  │  ├─ utils/                 # Auth、Axios、校验、标题工具
-│  │  └─ views/                 # 页面视图与学习示例
+│  │  ├─ utils/                 # Auth、Axios、Socket、校验和标题工具
+│  │  └─ views/                 # 页面视图与学习示例（含智能体聊天）
 │  ├─ index.html
 │  ├─ package.json
 │  ├─ tsconfig.json
@@ -72,6 +78,8 @@ apps/
 │  │  ├─ middleware/            # 鉴权中间件
 │  │  ├─ models/                # Mongoose 模型
 │  │  ├─ routes/                # API 路由
+│  │  ├─ agent/                 # LangChain 智能体、模型和工具
+│  │  ├─ socket/                # Socket.IO 鉴权、事件和类型
 │  │  ├─ scripts/               # seed 脚本
 │  │  ├─ types/                 # 类型声明
 │  │  ├─ server.ts
@@ -106,11 +114,16 @@ npm install
 
 ```env
 PORT=3000
-MONGODB_URI=mongodb://127.0.0.1:27017/vue-admin-learning
-JWT_SECRET=please-change-this-secret
+MONGODB_URI=mongodb://127.0.0.1:27017/quiz
+JWT_SECRET=change-me
 SEED_ADMIN_USERNAME=admin
 SEED_ADMIN_PASSWORD=admin123
+OPENAI_API_KEY=your-api-key
+OPENAI_BASE_URL=https://your-openai-compatible-endpoint/v1
+OPENAI_MODEL=gpt-5.6-sol
 ```
+
+`OPENAI_BASE_URL` 需要填写 OpenAI 兼容服务的接口地址，通常以 `/v1` 结尾；如果使用官方 OpenAI 接口，可配置为 `https://api.openai.com/v1`。也可以使用 Windows 用户级或系统级环境变量，但修改后需要重新打开终端或 IDE，确保 Node.js 进程能够读取到新变量。
 
 请勿将包含真实密钥、数据库密码或生产配置的 `.env` 文件提交到 Git。
 
@@ -139,6 +152,8 @@ npm run dev
 - 前端：<http://localhost:5173>
 - 后端：`http://localhost:3000`
 
+登录后可以在前端“智能体”页面创建会话并发送消息。智能体通过 Socket.IO 返回流式文本，并将会话和消息保存到 MongoDB；询问当前日期或时间时，会调用 `get_current_time` 工具获取实时结果。
+
 生产构建与预览：
 
 ```bash
@@ -165,6 +180,29 @@ npm run seed
 
 然后使用上述账号登录。
 
+## 主要接口
+
+后端接口默认挂载在 `http://localhost:3000/api`，除登录接口外均需要在请求头中携带 JWT：
+
+```text
+POST /auth/login                         登录并获取 Token
+GET  /auth/me                            获取当前用户
+GET  /auth/info                          获取用户信息和角色
+GET  /agent/conversations                查询当前用户的会话
+POST /agent/conversations                创建智能体会话
+GET  /agent/conversations/:id/messages   查询会话历史消息
+```
+
+智能体实时通信使用 Socket.IO，连接地址为 `http://localhost:3000`，握手时通过 `auth.token` 传入登录 Token。主要事件包括：
+
+```text
+chat:join       加入会话房间
+chat:leave      离开会话房间
+chat:send       发送消息
+agent:delta     接收智能体流式文本片段
+agent:error     接收智能体调用错误
+```
+
 ## 学习内容
 
 当前代码重点覆盖：
@@ -177,6 +215,8 @@ npm run seed
 - 权限控制：角色判断、动态菜单生成和路由挂载
 - 管理后台功能：图表、全屏、页面标题、SVG 图标、复制功能
 - Express + JWT + MongoDB 的登录接口、鉴权中间件与数据模型
+- LangChain 智能体、OpenAI 兼容模型配置、实时工具调用和流式输出
+- Socket.IO 鉴权、会话房间、消息持久化与前端增量渲染
 - Vue 2 到 Vue 3 的组件、事件和模板语法迁移思路
 - Vite 别名、SVG 图标和 Sass 工程化配置
 

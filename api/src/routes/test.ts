@@ -39,9 +39,9 @@ router.get("/test-tool", authRequired, async (req, res) => {
       req.query.message || "现在上海时间几点？"
     )
 
-    const messages = await invokeAgent([
-      new HumanMessage(question),
-    ])
+    const messages = await invokeAgent(
+      [new HumanMessage(question),],
+      req.user!.sub,)
 
     const lastMessage = messages.at(-1);
 

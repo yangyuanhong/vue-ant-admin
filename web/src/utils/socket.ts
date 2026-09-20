@@ -14,6 +14,19 @@ export interface AgentErrorPayload {
   error: string
 }
 
+export interface AgentToolStartPayload {
+  conversationId: string
+  messageId: string
+  toolName: string
+}
+
+export interface AgentToolEndPayload {
+  conversationId: string
+  messageId: string
+  toolName: string
+  result?: string
+}
+
 export interface ChatMessagePayload {
   id: string;
   clientMessageId: string;
@@ -39,6 +52,8 @@ interface ServerToClientEvents {
   "agent:delta": (payload: AgentDeltaPayload) => void
   "agent:error": (payload: AgentErrorPayload) => void
   "chat:message": (message: ChatMessagePayload) => void
+  "agent:tool-start": (payload: AgentToolStartPayload) => void
+  "agent:tool-end": (payload: AgentToolEndPayload) => void
 }
 
 interface ClientToServerEvents {

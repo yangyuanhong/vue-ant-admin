@@ -1,5 +1,3 @@
-import RouterDemoPage from "../views/RouterDemoPage.vue";
-import VModelDemoPage from "../views/VModelDemoPage.vue";
 import LayoutIndex from "@/layout/index.vue";
 import { ExtendedRouteRecordRaw } from "@/stores/types/index.js";
 
@@ -89,22 +87,22 @@ export const constantRoutes: ExtendedRouteRecordRaw[] = [
   {
     path: "/router-demo/query",
     name: "router-query",
-    component: RouterDemoPage,
+    component: () => import("@/views/RouterDemoPage.vue"),
   },
   {
     path: "/router-demo/user/:id",
     name: "router-params",
-    component: RouterDemoPage,
+    component: () => import("@/views/RouterDemoPage.vue"),
   },
   {
     path: "/router-demo/params-lost",
     name: "router-params-lost",
-    component: RouterDemoPage,
+    component: () => import("@/views/RouterDemoPage.vue"),
   },
   {
     path: "/v-model-demo",
     name: "v-model-demo",
-    component: VModelDemoPage,
+    component: () => import("@/views/VModelDemoPage.vue"),
   },
   {
     path: "/:pathMatch(.*)*",

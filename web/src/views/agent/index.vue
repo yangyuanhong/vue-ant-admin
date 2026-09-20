@@ -33,20 +33,15 @@ import { message } from "ant-design-vue";
 import { useAuthStore } from "@/stores/auth";
 import {
   getSocket,
-  joinChat,
+  type AgentToolStartPayload,
+  type AgentToolEndPayload,
   type AgentDeltaPayload,
   type AgentErrorPayload,
 } from "@/utils/socket";
-import {
-  createConversation,
-  getConversations,
-  getConversationMessages,
-} from "@/api/agent";
-import { type ChatMessageDto, type ConversationDto } from "./types";
-import { toMessageModel } from "./utils";
+import { createChatListHandlers } from "./ts/chat-list";
 
 // 导入io流式处理函数
-import { handleAgentDelta, handleAgentError } from "./ts/agent-event-handle";
+import { handleAgentDelta, handleAgentError, handleAgentToolEnd, handleAgentToolStart } from './ts/agent-event-handle';
 import {
   sendMessage as sendAgentMessage,
   type SendPayload,
@@ -77,6 +72,18 @@ const activeChat = ref<ChatModel>({
 const chats = ref<ChatModel[]>([]);
 const messagesText = ref<MessageModel[]>([]);
 
+const { handleOpenChat, handleAddChat, initializeChat } =
+  createChatListHandlers({
+    socket,
+    currentUser,
+    assistantUser,
+    chats,
+    activeChat,
+    messagesText,
+    chatsLoaded,
+    messagesLoaded,
+  });
+
 const onInvalidFile = ({
   file,
   reason,
@@ -103,6 +110,8 @@ const onInvalidFile = ({
 //   });
 // };
 
+
+
 const handleAgentDeltaEvent = (payload: AgentDeltaPayload) => {
   handleAgentDelta(payload, messagesText, assistantUser, activeChat);
 };
@@ -110,9 +119,19 @@ const handleAgentErrorEvent = (payload: AgentErrorPayload) => {
   handleAgentError(payload, messagesText, activeChat);
 };
 
+const handleAgentToolStartEvent = (payload: AgentToolStartPayload) => {
+  handleAgentToolStart(payload, messagesText, assistantUser);
+};
+
+const handleAgentToolEndEvent = (payload: AgentToolEndPayload) => {
+  handleAgentToolEnd(payload, messagesText)
+}
+
 onMounted(() => {
   socket.on("agent:delta", handleAgentDeltaEvent);
   socket.on("agent:error", handleAgentErrorEvent);
+  socket.on("agent:tool-start", handleAgentToolStartEvent);
+  socket.on("agent:tool-end", handleAgentToolEndEvent);
 
   void initializeChat();
 });
@@ -121,6 +140,8 @@ onBeforeUnmount(() => {
   // 页面离开时只移除当前页面监听，连接由 socket 工具统一管理
   socket.off("agent:delta", handleAgentDeltaEvent);
   socket.off("agent:error", handleAgentErrorEvent);
+  socket.off("agent:tool-start", handleAgentToolStartEvent);
+  socket.off("agent:tool-end", handleAgentToolEndEvent);
 });
 
 const sendMessage = (payload: SendPayload) => {
@@ -132,106 +153,6 @@ const sendMessage = (payload: SendPayload) => {
     assistantUser,
   );
 };
-
-async function handleOpenChat(chat: ChatModel) {
-  if (chat.id === activeChat.value.id) {
-    return;
-  }
-
-  try {
-    messagesLoaded.value = false;
-    const previousConversationId = activeChat.value.id;
-    activeChat.value = chat;
-    messagesText.value = [];
-
-    if (previousConversationId) {
-      socket.emit("chat:leave", previousConversationId);
-    }
-
-    const response = await getConversationMessages(chat.id);
-
-    messagesText.value = response.data.map((item) =>
-      toMessageModel(item, currentUser, assistantUser),
-    );
-
-    joinChat(chat.id);
-  } catch (error) {
-    console.error("切换会话失败", error);
-    message.error("切换会话失败");
-  } finally {
-    messagesLoaded.value = true;
-  }
-}
-
-async function handleAddChat() {
-  try {
-    const response = await createConversation();
-    const conversation = response.data;
-
-    const newChat: ChatModel = {
-      id: conversation._id,
-      name: conversation.title,
-      users: [currentUser.value, assistantUser],
-      typingUsers:[],
-    }
-
-    chats.value = [newChat, ...chats.value];
-
-    activeChat.value = newChat
-    messagesText.value = [];
-
-    joinChat(newChat.id)
-  } catch (error) {
-    console.error("创建会话失败", error)
-    message.error("创建会话失败")
-  }
-}
-
-async function initializeChat() {
-  chatsLoaded.value = false;
-  messagesLoaded.value = false;
-
-  try {
-    const conversationResponse = await getConversations();
-
-    let conversations = conversationResponse.data;
-
-    if (!conversations.length) {
-      const createResponse = await createConversation();
-      conversations = [createResponse.data];
-    }
-
-    const conversationChats: ChatModel[] = conversations.map(
-      (conversation) => ({
-        id: conversation._id,
-        name: conversation.title,
-        users: [currentUser.value, assistantUser],
-        typingUsers: [],
-      }),
-    );
-
-    chats.value = conversationChats;
-
-    const firstChat = conversationChats[0];
-
-    activeChat.value = firstChat;
-
-    const messageResponse = await getConversationMessages(firstChat.id);
-
-    messagesText.value = messageResponse.data.map((item) =>
-      toMessageModel(item, currentUser, assistantUser),
-    );
-
-    // 必须使用数据库中的真实会话ID
-    joinChat(firstChat.id);
-  } catch (error) {
-    console.error("初始化会话失败：", error);
-    message.error("加载会话失败");
-  } finally {
-    chatsLoaded.value = true;
-    messagesLoaded.value = true;
-  }
-}
 </script>
 <style lang="scss" scoped>
 .agent-outer {

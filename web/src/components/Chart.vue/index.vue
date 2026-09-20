@@ -7,8 +7,29 @@
 </template>
 <script lang="ts" setup name="ChartsIndex">
 import { nextTick, onMounted, watch, useTemplateRef } from "vue";
-import * as echarts from "echarts";
+import * as echarts from "echarts/core";
+import { BarChart, LineChart, PieChart, RadarChart } from "echarts/charts";
+import {
+  GridComponent,
+  LegendComponent,
+  RadarComponent,
+  TooltipComponent,
+} from "echarts/components";
+import { CanvasRenderer } from "echarts/renderers";
+import type { ECharts } from "echarts/core";
 import useChartResize from "./mixins/resize";
+
+echarts.use([
+  BarChart,
+  LineChart,
+  PieChart,
+  RadarChart,
+  GridComponent,
+  LegendComponent,
+  RadarComponent,
+  TooltipComponent,
+  CanvasRenderer,
+]);
 
 const props = withDefaults(
   defineProps<{
@@ -23,7 +44,7 @@ const props = withDefaults(
 );
 
 const chartRef = useTemplateRef("chartRef");
-let chart: echarts.ECharts | null = null;
+let chart: ECharts | null = null;
 
 const renderChart = () => {
   if (!chartRef.value) return;

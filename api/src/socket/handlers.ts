@@ -119,9 +119,26 @@ async function handleChatSend(
 
     // 使用带工具的agent流式输出
     for await (
-      const event of streamToolAgent([...history])
+      const event of streamToolAgent([...history], userId)
     ) {
-      if (event.type !== "text") {
+      if (event.type === "tool-start") {
+        io.to(payload.conversationId).emit("agent:tool-start", {
+          conversationId: payload.conversationId,
+          messageId,
+          toolName: event.toolName,
+        })
+
+        continue
+      }
+
+      if (event.type === "tool-end") {
+        io.to(payload.conversationId).emit("agent:tool-end", {
+          conversationId: payload.conversationId,
+          messageId,
+          toolName: event.toolName,
+          result: event.result,
+        })
+
         continue
       }
 

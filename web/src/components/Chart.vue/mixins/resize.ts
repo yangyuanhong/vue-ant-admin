@@ -1,5 +1,5 @@
 import { debounce } from "@/utils";
-import { ECharts } from "echarts";
+import type { ECharts } from "echarts/core";
 import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from "vue";
 
 type ResizeableChart = {

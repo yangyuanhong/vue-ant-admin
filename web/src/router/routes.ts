@@ -129,4 +129,16 @@ export const asyncRoutes: ExtendedRouteRecordRaw[] = [
       },
     ],
   },
+  {
+    path: "/agent",
+    component: LayoutIndex,
+    children: [
+      {
+        path: "index",
+        component: () => import("@/views/agent/index.vue"),
+        name: "agent",
+        meta: { title: "智能体", icon: "icon", noCache: true },
+      },
+    ],
+  },
 ];

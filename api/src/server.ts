@@ -1,11 +1,15 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { createServer } from 'http'
 import path from "path"
 import { fileURLToPath } from "url"
 import authRouter from './routes/auth.js'
 import transactionRouter from "./routes/transaction.js"
+import agentRouter from "./routes/agent.js"
+import testRouter from "./routes/test.js"
 import { connectDb } from './config/db.js'
+import { createSocketServer } from './socket/index.js'
 
 dotenv.config({ path: new URL('../.env', import.meta.url) })
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -14,6 +18,8 @@ const webDist = path.resolve(__dirname, "../../web/dist")
 
 const app = express()
 const port = process.env.PORT || 3000
+const httpServer = createServer(app)
+createSocketServer(httpServer)
 
 app.use(cors())
 app.use(express.json())
@@ -35,9 +41,11 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/tran', transactionRouter)
+app.use("/api/agent", agentRouter)
+app.use("/api/test", testRouter)
 
 await connectDb(process.env.MONGODB_URI)
 
-app.listen(port, () => {
+httpServer.listen(port, () => {
   console.log(`API listening on http://localhost:${port}`)
 })

@@ -20,3 +20,25 @@ export interface ChatMessageDocument extends Document {
   createdAt: Date
   updatedAt: Date
 }
+
+export interface ToolCallDocument extends Document {
+  conversationId: string;
+  messageId: string;
+  userId: string;
+
+  toolCallId: string;
+  toolName: string;
+
+  input: unknown;
+  output?: unknown;
+
+  status: "running" | "success" | "failed";
+  error?: string;
+
+  startedAt: Date;
+  finishedAt?: Date;
+  durationMs?: number;
+
+  createdAt: Date;
+  updatedAt: Date;
+}

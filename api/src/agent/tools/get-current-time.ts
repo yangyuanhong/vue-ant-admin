@@ -6,10 +6,6 @@ export const getCurrentTimeTool = tool(
     const now = new Date();
     const resolvedTimeZone = timeZone || "Asia/Shanghai";
 
-    console.log("[tool] get_current_time", {
-      timeZone,
-    });
-
     const formattedTime = new Intl.DateTimeFormat("zh-CN", {
       timeZone: resolvedTimeZone,
       year: "numeric",

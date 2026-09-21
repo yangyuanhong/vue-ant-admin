@@ -3,34 +3,36 @@ import { authRequired } from "../middleware/auth.js";
 import { isEmptyObject } from "../utils/index.js";
 import { ConversationModel } from "../models/ConversationModel.js";
 import { ChatMessageModel } from "../models/ChatMessageModel.js";
+import { ToolCallModel } from "../models/ToolCallModel.js";
+import { logger } from "../utils/logger.js";
 
 const router = Router();
 
 // 创建会话路由
 router.post("/conversations", authRequired, async (req, res) => {
-   const body = !isEmptyObject(req.body) ? req.body : req.query;
+  const body = !isEmptyObject(req.body) ? req.body : req.query;
   try {
     const userId = req.user!.sub;
-      const data = await ConversationModel.create({
-        title: body.title || "新对话",
-        ownerId: userId,
-        participantIds: [userId],
-        type: "agent",
-        status:"active"
-      });
-      res.json({
-        code: 20000,
-        message: "创建成功",
-        data: data,
-      });
-    } catch (error) {
-      res.status(500).json({
-        code: 20002,
-        message: "创建失败",
-        data: null,
-      });
-    }
-})
+    const data = await ConversationModel.create({
+      title: body.title || "新对话",
+      ownerId: userId,
+      participantIds: [userId],
+      type: "agent",
+      status: "active",
+    });
+    res.json({
+      code: 20000,
+      message: "创建成功",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      code: 20002,
+      message: "创建失败",
+      data: null,
+    });
+  }
+});
 
 router.get("/conversations", authRequired, async (req, res) => {
   try {
@@ -38,22 +40,30 @@ router.get("/conversations", authRequired, async (req, res) => {
 
     const conversations = await ConversationModel.find({
       participantIds: userId,
-      status: "active"
-    }).sort({ updatedAt: -1 }).lean();
+      status: "active",
+    })
+      .sort({ updatedAt: -1 })
+      .lean();
 
     res.json({
       code: 20000,
       message: "查询成功",
       data: conversations,
-    })
+    });
   } catch (error) {
-    console.error("查询会话失败：", error)
+    logger.error(
+      {
+        err: error,
+        userId: req.user?.sub,
+      },
+      "查询会话失败",
+    );
 
     res.status(500).json({
       code: 20002,
       message: "查询会话失败",
-      data: []
-    })
+      data: [],
+    });
   }
 });
 
@@ -62,23 +72,23 @@ router.get(
   authRequired,
   async (req, res) => {
     try {
-      const userId = req.user!.sub
-      const conversationId = req.params.conversationId
+      const userId = req.user!.sub;
+      const conversationId = req.params.conversationId;
 
       // 先校验会话归属
       const conversation = await ConversationModel.findOne({
         _id: conversationId,
         participantIds: userId,
         status: "active",
-      }).lean()
+      }).lean();
 
       if (!conversation) {
         res.status(404).json({
           code: 20004,
           message: "会话不存在或无权访问",
           data: [],
-        })
-        return
+        });
+        return;
       }
 
       const messages = await ChatMessageModel.find({
@@ -87,23 +97,81 @@ router.get(
       })
         .sort({ createdAt: 1 })
         .limit(100)
-        .lean()
+        .lean();
 
       res.json({
         code: 20000,
         message: "查询成功",
         data: messages,
-      })
+      });
     } catch (error) {
-      console.error("查询历史消息失败：", error)
+      logger.error(
+        {
+          err: error,
+          userId: req.user?.sub,
+          conversationId: req.params.conversationId,
+        },
+        "查询历史消息失败",
+      );
 
       res.status(500).json({
         code: 20002,
         message: "查询历史消息失败",
         data: [],
-      })
+      });
     }
   },
-)
+);
+
+router.get(
+  "/conversations/:conversationId/tool-calls",
+  authRequired,
+  async (req, res) => {
+    try {
+      const userId = req.user?.sub;
+      const { conversationId } = req.params;
+
+      const conversation = await ConversationModel.findOne({
+        _id: conversationId,
+        participantIds: userId,
+        status: "active",
+      });
+
+      if (!conversation) {
+        return res.status(404).json({
+          code: 40400,
+          message: "会话不存在或无权访问",
+        });
+      }
+
+      const records = await ToolCallModel.find({
+        conversationId,
+        userId,
+      })
+        .sort({ createdAt: 1 })
+        .lean();
+
+      return res.json({
+        code: 20000,
+        message: "查询成功",
+        data: records,
+      });
+    } catch (error) {
+      logger.error(
+        {
+          err: error,
+          userId: req.user?.sub,
+          conversationId: req.params.conversationId,
+        },
+        "查询 Tool 调用记录失败",
+      );
+
+      return res.status(500).json({
+        code: 50000,
+        message: "查询 Tool 调用记录失败",
+      });
+    }
+  },
+);
 
 export default router;

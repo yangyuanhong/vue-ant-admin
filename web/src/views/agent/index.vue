@@ -22,7 +22,7 @@
   </div>
 </template>
 <script lang="ts" setup name="Index">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   type ChatModel,
   type MessageModel,

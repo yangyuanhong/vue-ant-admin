@@ -8,10 +8,20 @@ import { streamAgent, streamToolAgent } from "../agent/index.js";
 import { ConversationModel } from "../models/ConversationModel.js";
 import { ChatMessageModel } from "../models/ChatMessageModel.js";
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
+import { ToolCallModel } from "../models/ToolCallModel.js";
+import { logger } from "../utils/logger.js";
 
 const systemMessage = new SystemMessage(
   "你是一个友好的中文智能助手，回答要清晰、简洁、准确。",
 );
+
+function parseToolResult(result: string): unknown {
+  try {
+    return JSON.parse(result);
+  } catch {
+    return result;
+  }
+}
 
 function emitAgentError(
   io: AppSocketServer,
@@ -116,12 +126,44 @@ async function handleChatSend(
     //     done: false,
     //   });
     // }
+    // 进入循环之前保存 Tool 开始时间
+    const toolStartedAtMap = new Map<string, Date>();
 
     // 使用带工具的agent流式输出
     for await (
       const event of streamToolAgent([...history], userId)
     ) {
       if (event.type === "tool-start") {
+        const startedAt = new Date();
+        toolStartedAtMap.set(event.toolCallId, startedAt);
+        //使用 findOneAndUpdate + upsert，可以防止流式消息重复产生 Tool Start 时插入多条记录
+        await ToolCallModel.findOneAndUpdate({
+          conversationId: payload.conversationId,
+          toolCallId: event.toolCallId,
+        }, {
+          $setOnInsert: {
+            conversationId: payload.conversationId,
+            messageId,
+            userId,
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            input: event.input,
+            status: "running",
+            startedAt,
+          },
+        }, {
+          upsert: true,
+          new: true,
+        });
+
+        logger.info({
+          conversationId: payload.conversationId,
+          messageId,
+          userId,
+          toolCallId: event.toolCallId,
+          toolName: event.toolName
+        }, "Tool 开始执行",);
+
         io.to(payload.conversationId).emit("agent:tool-start", {
           conversationId: payload.conversationId,
           messageId,
@@ -132,6 +174,29 @@ async function handleChatSend(
       }
 
       if (event.type === "tool-end") {
+        const finishedAt = new Date();
+        const startedAt = toolStartedAtMap.get(event.toolCallId);
+
+        await ToolCallModel.findOneAndUpdate({
+          conversationId: payload.conversationId,
+          toolCallId: event.toolCallId,
+        }, {
+          $set: {
+            output: parseToolResult(event.result || ""),
+            status: "success",
+            finishedAt,
+            durationMs: startedAt ? finishedAt.getTime() - startedAt.getTime() : undefined,
+          },
+        },);
+
+        logger.info({
+          conversationId: payload.conversationId,
+          messageId,
+          userId,
+          toolCallId: event.toolCallId,
+          toolName: event.toolName,
+          durationMs: startedAt ? finishedAt.getTime() - startedAt.getTime() : undefined,
+        }, "Tool 执行完成");
         io.to(payload.conversationId).emit("agent:tool-end", {
           conversationId: payload.conversationId,
           messageId,
@@ -168,7 +233,36 @@ async function handleChatSend(
       done: true,
     });
   } catch (error) {
-    console.error("Agent 调用失败：", error);
+    logger.error({
+      err: error,
+      conversationId: payload.conversationId,
+      messageId,
+      userId,
+    }, "Agent 调用失败");
+    const errorMessage = error instanceof Error ? error.message : "Agent 回复失败";
+    try {
+      await ToolCallModel.updateMany(
+      {
+        conversationId: payload.conversationId,
+        messageId,
+        status: "running"
+      },
+      {
+        $set: {
+          status: "failed",
+          error: errorMessage,
+          finishedAt: new Date(),
+        }
+      }
+    )
+    } catch (persistError) {
+      logger.error({
+        err: persistError,
+        conversationId: payload.conversationId,
+        messageId,
+      }, "更新 Tool 失败状态失败")
+    }
+    
     callback({
       success: false,
       error: error instanceof Error ? error.message : "发送失败",

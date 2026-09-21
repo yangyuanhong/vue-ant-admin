@@ -8,14 +8,14 @@ import { getAgent } from "./agent.js";
 import type { BaseMessage } from "@langchain/core/messages";
 import { AgentStreamEvent } from "./types/index.js";
 
-export async function invokeAgent(messages: BaseMessage[], userId:string) {
-  const agent = getAgent(userId)
+export async function invokeAgent(messages: BaseMessage[], userId: string) {
+  const agent = getAgent(userId);
 
   const result = await agent.invoke({
     messages,
-  })
+  });
 
-  return result.messages
+  return result.messages;
 }
 export async function askAgent(userInput: string): Promise<string> {
   const model = getModel();
@@ -46,72 +46,90 @@ export async function askAgent(userInput: string): Promise<string> {
 // 新链路：Socket → createAgent → Tool → ChatOpenAI
 export async function* streamToolAgent(
   messages: Array<HumanMessage | AIMessage | SystemMessage>,
-  userId: string
-):AsyncGenerator<AgentStreamEvent> {
-  const agent = getAgent(userId)
+  userId: string,
+): AsyncGenerator<AgentStreamEvent> {
+  const agent = getAgent(userId);
 
-  const stream = await agent.stream({
-    messages,
-  }, {
-    streamMode: "messages"
-  })
+  const stream = await agent.stream(
+    {
+      messages,
+    },
+    {
+      streamMode: "messages",
+    },
+  );
 
-  const startedTools = new Set<string>()
+  const startedToolCallIds = new Set<string>();
 
   for await (const item of stream) {
     const message = Array.isArray(item) ? item[0] : item;
     const content = message.content;
     // 识别模型发出的Tool调用
-    const toolCalls = "tool_calls" in message ? message.tool_calls : [];
+    const toolCalls =
+      "tool_calls" in message && Array.isArray(message.tool_calls)
+        ? message.tool_calls
+        : [];
 
-    if (Array.isArray(toolCalls)) {
-      for (const call of toolCalls) {
-        const toolName = call.name;
+    for (const call of toolCalls) {
+      const toolCallId = call.id;
+      const toolName = call.name;
 
-        if (toolName && !startedTools.has(toolName)) {
-          startedTools.add(toolName)
-
-          yield {
-            type: "tool-start",
-            toolName
-          }
-        }
+      if (!toolCallId || !toolName || startedToolCallIds.has(toolCallId)) {
+        continue;
       }
+
+      startedToolCallIds.add(toolCallId);
+
+      yield {
+        type: "tool-start",
+        toolName,
+        toolCallId,
+        input: call.args ?? {},
+      };
     }
 
     // 识别Tool返回结果
     if (message.getType?.() === "tool") {
-      const toolName = "name" in message && typeof message.name === "string" ? message.name : "unknown_tool";
+      const toolCallId =
+        "tool_call_id" in message && typeof message.tool_call_id === "string"
+          ? message.tool_call_id
+          : "";
+      const toolName =
+        "name" in message && typeof message.name === "string"
+          ? message.name
+          : "unknown_tool";
 
       yield {
         type: "tool-end",
+        toolCallId,
         toolName,
         result: typeof content === "string" ? content : JSON.stringify(content),
-      }
+      };
 
-      continue
+      continue;
     }
 
     if (typeof content === "string" && content) {
       yield {
         type: "text",
         content,
-      }
-      continue
+      };
+      continue;
     }
 
     if (Array.isArray(content)) {
       for (const block of content) {
-        if (typeof block === "object" &&
-          block !== null && 
+        if (
+          typeof block === "object" &&
+          block !== null &&
           "text" in block &&
           typeof block.text === "string" &&
           block.text
         ) {
           yield {
             type: "text" as const,
-            content: block.text
-          }
+            content: block.text,
+          };
         }
       }
     }

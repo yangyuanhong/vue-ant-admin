@@ -26,6 +26,19 @@ export const handleAgentError = (
 
   if (agentMessage) {
     agentMessage.status = "failed";
+    agentMessage.content = `❌ ${payload.error}`;
+  } else {
+    messagesText.value.push({
+      id: payload.messageId,
+      sender: {
+        id: "assistant",
+        name: "小o",
+        status: { state:"online" },
+      },
+      content: `❌ ${payload.error}`,
+      createdAt: new Date().toISOString(),
+      status: "failed"
+    })
   }
 
   activeChat.value.typingUsers = [];

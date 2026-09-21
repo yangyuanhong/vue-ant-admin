@@ -15,3 +15,9 @@ export function createConversation(title = "新对话"):Promise<ApiResponse<Conv
     title,
   })
 }
+
+export function getConversationToolCalls(
+  conversationId:string
+) {
+  return api.get(`/agent/conversations/${conversationId}/tool-calls`);
+}

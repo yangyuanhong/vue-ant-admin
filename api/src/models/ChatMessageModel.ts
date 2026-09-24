@@ -21,6 +21,10 @@ const chatMessageSchema = new Schema<ChatMessageDocument>(
       type: String,
       default: "",
     },
+    fileIds: {
+      type: [String],
+      default: [],
+    },
     clientMessageId: {
       type: String,
       index: true,

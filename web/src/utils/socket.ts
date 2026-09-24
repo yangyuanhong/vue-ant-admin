@@ -99,3 +99,10 @@ export function sendChatMessage(
 ): void {
   getSocket().emit("chat:send", payload, callback);
 }
+
+export interface SendMessagePayload {
+  conversationId: string;
+  content: string;
+  clientMessageId: string;
+  fileIds?: string[];
+}

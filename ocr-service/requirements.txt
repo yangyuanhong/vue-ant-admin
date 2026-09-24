@@ -1,0 +1,6 @@
+# GPU Paddle：运行 scripts/install_gpu.ps1 安装，避免 pip -r 覆盖成 CPU 版。
+paddleocr==3.7.0
+fastapi==0.141.1
+uvicorn[standard]==0.53.0
+python-multipart==0.0.32
+PyMuPDF==1.28.2

@@ -145,7 +145,7 @@ onBeforeUnmount(() => {
 });
 
 const sendMessage = (payload: SendPayload) => {
-  sendAgentMessage(
+  void sendAgentMessage(
     payload,
     activeChat,
     messagesText,

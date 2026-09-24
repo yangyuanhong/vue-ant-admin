@@ -15,8 +15,18 @@ export interface ChatMessageDto {
   senderId: string
   role: "user" | "assistant" | "system" | "tool"
   content: string
+  fileIds: string[];
   clientMessageId?: string
   status: "sending" | "sent" | "failed"
   createdAt: string
   updatedAt: string
+}
+
+export interface UploadedChatFileDto {
+  fileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  status: "uploaded" | "processing" | "ready" | "failed";
+  createdAt: string;
 }

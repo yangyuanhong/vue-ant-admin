@@ -10,6 +10,8 @@ import { ChatMessageModel } from "../models/ChatMessageModel.js";
 import { AIMessage, HumanMessage, SystemMessage } from "langchain";
 import { ToolCallModel } from "../models/ToolCallModel.js";
 import { logger } from "../utils/logger.js";
+import mongoose from "mongoose";
+import { ChatFileModel } from "../models/ChatFileModel.js";
 
 const systemMessage = new SystemMessage(
   "你是一个友好的中文智能助手，回答要清晰、简洁、准确。",
@@ -32,7 +34,7 @@ function emitAgentError(
   io.to(conversationId).emit("agent:error", {
     conversationId,
     messageId,
-    error: error instanceof Error ? error.message : "Agent 回复失败",
+    error: getPublicAgentError(error),
   });
 }
 
@@ -71,12 +73,59 @@ async function handleChatSend(
       return;
     }
 
+    const fileIds = [...new Set(payload.fileIds ?? [])];
+
+    if (fileIds.length > 5) {
+      callback({
+        success: false,
+        error: "一条消息最多关联 5 个附件",
+      });
+
+      return;
+    }
+
+    const hasInvalidFileId = fileIds.some(
+      (fileId) => !mongoose.isValidObjectId(fileId),
+    );
+
+    if (hasInvalidFileId) {
+      callback({
+        success: false,
+        error: "附件 ID 格式错误",
+      });
+
+      return;
+    }
+
+    if (fileIds.length > 0) {
+      const ownedFileCount = await ChatFileModel.countDocuments({
+        _id: {
+          $in: fileIds,
+        },
+        conversationId: payload.conversationId,
+        ownerId: userId,
+        status: {
+          $in: ["uploaded", "processing", "ready"],
+        },
+      });
+
+      if (ownedFileCount !== fileIds.length) {
+        callback({
+          success: false,
+          error: "附件不存在或无权访问",
+        });
+
+        return;
+      }
+    }
+
     // 2、保存用户消息
     const userMessage = {
       conversationId: payload.conversationId,
       senderId: userId,
       role: "user",
       content,
+      fileIds,
       status: "sent",
       ...(payload.clientMessageId?.trim()
         ? { clientMessageId: payload.clientMessageId.trim() }
@@ -96,15 +145,63 @@ async function handleChatSend(
 
     historyRecords.reverse();
 
+    const historyFileIds = [
+      ...new Set(historyRecords.flatMap((item) => item.fileIds ?? [])),
+    ];
+    const historyFiles =
+      historyFileIds.length > 0
+        ? await ChatFileModel.find({
+            _id: {
+              $in: historyFileIds,
+            },
+            conversationId: payload.conversationId,
+            ownerId: userId,
+          }).lean()
+        : [];
+
+    const fileMap = new Map(
+      historyFiles.map((file) => [file._id.toString(), file]),
+    );
+
     // 4、转成LangChain消息
     const history = historyRecords
       .filter((item) => item.role === "user" || item.role === "assistant")
       .map((item) => {
-        if (item.role === "user") {
+        if (item.role === "assistant") {
+          return new AIMessage(item.content);
+        }
+
+        const attachedFiles = (item.fileIds ?? [])
+          .map((fileId) => fileMap.get(fileId))
+          .filter((file) => Boolean(file));
+
+        if (attachedFiles.length === 0) {
           return new HumanMessage(item.content);
         }
 
-        return new AIMessage(item.content);
+        const attachmentDescription = attachedFiles
+          .map((file) => {
+            const text = file?.extractedMarkdown
+              ? file.extractedMarkdown.slice(0, 10_000)
+              : "文件正文尚未解析";
+
+            return [
+              `文件名：${file!.originalName}`,
+              `类型：${file!.mimeType}`,
+              "文件正文：",
+              text,
+            ].join("\n");
+          })
+          .join("\n\n");
+
+        return new HumanMessage(
+          [
+            item.content,
+            "",
+            "[用户随消息上传了以下附件]",
+            attachmentDescription,
+          ].join("\n"),
+        );
       });
 
     let fullAnswer = "";
@@ -130,81 +227,96 @@ async function handleChatSend(
     const toolStartedAtMap = new Map<string, Date>();
 
     // 使用带工具的agent流式输出
-    for await (
-      const event of streamToolAgent([...history], userId)
-    ) {
+    for await (const event of streamToolAgent([...history], userId)) {
       if (event.type === "tool-start") {
         const startedAt = new Date();
         toolStartedAtMap.set(event.toolCallId, startedAt);
         //使用 findOneAndUpdate + upsert，可以防止流式消息重复产生 Tool Start 时插入多条记录
-        await ToolCallModel.findOneAndUpdate({
-          conversationId: payload.conversationId,
-          toolCallId: event.toolCallId,
-        }, {
-          $setOnInsert: {
+        await ToolCallModel.findOneAndUpdate(
+          {
+            conversationId: payload.conversationId,
+            toolCallId: event.toolCallId,
+          },
+          {
+            $setOnInsert: {
+              conversationId: payload.conversationId,
+              messageId,
+              userId,
+              toolCallId: event.toolCallId,
+              toolName: event.toolName,
+              input: event.input,
+              status: "running",
+              startedAt,
+            },
+          },
+          {
+            upsert: true,
+            new: true,
+          },
+        );
+
+        logger.info(
+          {
             conversationId: payload.conversationId,
             messageId,
             userId,
             toolCallId: event.toolCallId,
             toolName: event.toolName,
-            input: event.input,
-            status: "running",
-            startedAt,
           },
-        }, {
-          upsert: true,
-          new: true,
-        });
-
-        logger.info({
-          conversationId: payload.conversationId,
-          messageId,
-          userId,
-          toolCallId: event.toolCallId,
-          toolName: event.toolName
-        }, "Tool 开始执行",);
+          "Tool 开始执行",
+        );
 
         io.to(payload.conversationId).emit("agent:tool-start", {
           conversationId: payload.conversationId,
           messageId,
           toolName: event.toolName,
-        })
+        });
 
-        continue
+        continue;
       }
 
       if (event.type === "tool-end") {
         const finishedAt = new Date();
         const startedAt = toolStartedAtMap.get(event.toolCallId);
 
-        await ToolCallModel.findOneAndUpdate({
-          conversationId: payload.conversationId,
-          toolCallId: event.toolCallId,
-        }, {
-          $set: {
-            output: parseToolResult(event.result || ""),
-            status: "success",
-            finishedAt,
-            durationMs: startedAt ? finishedAt.getTime() - startedAt.getTime() : undefined,
+        await ToolCallModel.findOneAndUpdate(
+          {
+            conversationId: payload.conversationId,
+            toolCallId: event.toolCallId,
           },
-        },);
+          {
+            $set: {
+              output: parseToolResult(event.result || ""),
+              status: "success",
+              finishedAt,
+              durationMs: startedAt
+                ? finishedAt.getTime() - startedAt.getTime()
+                : undefined,
+            },
+          },
+        );
 
-        logger.info({
-          conversationId: payload.conversationId,
-          messageId,
-          userId,
-          toolCallId: event.toolCallId,
-          toolName: event.toolName,
-          durationMs: startedAt ? finishedAt.getTime() - startedAt.getTime() : undefined,
-        }, "Tool 执行完成");
+        logger.info(
+          {
+            conversationId: payload.conversationId,
+            messageId,
+            userId,
+            toolCallId: event.toolCallId,
+            toolName: event.toolName,
+            durationMs: startedAt
+              ? finishedAt.getTime() - startedAt.getTime()
+              : undefined,
+          },
+          "Tool 执行完成",
+        );
         io.to(payload.conversationId).emit("agent:tool-end", {
           conversationId: payload.conversationId,
           messageId,
           toolName: event.toolName,
           result: event.result,
-        })
+        });
 
-        continue
+        continue;
       }
 
       fullAnswer += event.content;
@@ -214,7 +326,7 @@ async function handleChatSend(
         messageId,
         delta: event.content,
         done: false,
-      })
+      });
     }
 
     // 7、Agent 生成完成后保存完整回复
@@ -233,40 +345,42 @@ async function handleChatSend(
       done: true,
     });
   } catch (error) {
-    logger.error({
-      err: error,
-      conversationId: payload.conversationId,
-      messageId,
-      userId,
-    }, "Agent 调用失败");
-    const errorMessage = error instanceof Error ? error.message : "Agent 回复失败";
+    logger.error(
+      {
+        err: error,
+        conversationId: payload.conversationId,
+        messageId,
+        userId,
+      },
+      "Agent 调用失败",
+    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Agent 回复失败";
     try {
       await ToolCallModel.updateMany(
-      {
-        conversationId: payload.conversationId,
-        messageId,
-        status: "running"
-      },
-      {
-        $set: {
-          status: "failed",
-          error: errorMessage,
-          finishedAt: new Date(),
-        }
-      }
-    )
+        {
+          conversationId: payload.conversationId,
+          messageId,
+          status: "running",
+        },
+        {
+          $set: {
+            status: "failed",
+            error: errorMessage,
+            finishedAt: new Date(),
+          },
+        },
+      );
     } catch (persistError) {
-      logger.error({
-        err: persistError,
-        conversationId: payload.conversationId,
-        messageId,
-      }, "更新 Tool 失败状态失败")
+      logger.error(
+        {
+          err: persistError,
+          conversationId: payload.conversationId,
+          messageId,
+        },
+        "更新 Tool 失败状态失败",
+      );
     }
-    
-    callback({
-      success: false,
-      error: error instanceof Error ? error.message : "发送失败",
-    });
 
     emitAgentError(io, payload.conversationId, messageId, error);
   }
@@ -285,6 +399,16 @@ export function registerSocketHandlers(
   });
 
   socket.on("chat:leave", (conversationId) => {
-  socket.leave(conversationId)
-})
+    socket.leave(conversationId);
+  });
+}
+
+function getPublicAgentError(error: unknown): string {
+  const originalMessage = error instanceof Error ? error.message : "";
+
+  if (originalMessage.toLowerCase().includes("overloaded")) {
+    return "模型服务当前繁忙，请稍后重试。附件已经上传成功。";
+  }
+
+  return originalMessage || "Agent 回复失败";
 }

@@ -22,4 +22,6 @@ selenium-debug.log
 
 package-lock.json
 yarn.lock
+api/uploads/*
+!api/uploads/.gitkeep
 .worktrees/

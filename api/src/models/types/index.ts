@@ -42,3 +42,35 @@ export interface ToolCallDocument extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export interface ChatFileDocument extends Document {
+  ownerId: string;
+  conversationId: string;
+
+  originalName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  path: string;
+  extractedMarkdown?: string;
+
+  status: "uploaded" | "processing" | "ready" | "failed";
+  error?: string;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ChatMessageDocument extends Document {
+  conversationId: string;
+  senderId: string;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  clientMessageId?: string;
+
+  fileIds: string[];
+
+  status: "sending" | "sent" | "failed";
+  createdAt: Date;
+  updatedAt: Date;
+}

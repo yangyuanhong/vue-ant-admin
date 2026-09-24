@@ -5,8 +5,12 @@ import { ConversationModel } from "../models/ConversationModel.js";
 import { ChatMessageModel } from "../models/ChatMessageModel.js";
 import { ToolCallModel } from "../models/ToolCallModel.js";
 import { logger } from "../utils/logger.js";
+import uploadRouter from "./upload.js";
 
 const router = Router();
+
+// 把 upload.ts 中定义的路由合并进 agent 路由
+router.use(uploadRouter);
 
 // 创建会话路由
 router.post("/conversations", authRequired, async (req, res) => {
@@ -173,5 +177,7 @@ router.get(
     }
   },
 );
+
+
 
 export default router;

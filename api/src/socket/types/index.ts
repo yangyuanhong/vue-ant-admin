@@ -89,3 +89,10 @@ export type AppSocket = Socket<
   InterServerEvents,
   SocketData
 >;
+
+export interface SendMessagePayload {
+  conversationId: string;
+  content: string;
+  clientMessageId?: string | null;
+  fileIds?: string[];
+}
